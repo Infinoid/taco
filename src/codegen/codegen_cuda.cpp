@@ -334,7 +334,7 @@ protected:
       inDeviceFunction = true;
     }
     else if (op->parallel_unit == ParallelUnit::GPUWarp) {
-      taco_iassert(inDeviceFunction) << "Nested Device functions not supported";
+      taco_uassert(inDeviceFunction) << "GPUWarp index must be within a GPUBlock loop";
       taco_iassert(blockIDVars.size() == warpIDVars.size() + 1) << "No matching GPUBlock parallelize for GPUWarp";
       inDeviceFunction = false;
       op->var.accept(this);
@@ -346,7 +346,7 @@ protected:
       numWarps.push_back(warpsInBlock);
     }
     else if (op->parallel_unit == ParallelUnit::GPUThread) {
-      taco_iassert(inDeviceFunction) << "Nested Device functions not supported";
+      taco_uassert(inDeviceFunction) << "GPUThread index must be within a GPUBlock loop";
       taco_iassert(blockIDVars.size() == threadIDVars.size() + 1) << "No matching GPUBlock parallelize for GPUThread";
       if (blockIDVars.size() > warpIDVars.size()) {
         warpFors.push_back(Stmt());
@@ -370,7 +370,7 @@ protected:
     op->increment.accept(this);
     op->contents.accept(this);
     if (op->parallel_unit == ParallelUnit::GPUBlock) {
-      taco_iassert(blockIDVars.size() == threadIDVars.size()) << "No matching GPUThread parallelize for GPUBlock";
+      taco_uassert(blockIDVars.size() == threadIDVars.size()) << "No matching GPUThread parallelize for GPUBlock";
       inDeviceFunction = false;
       sort(currentParameters.begin(), currentParameters.end());
       functionParameters.push_back(currentParameters);
