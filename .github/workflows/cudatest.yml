@@ -1,0 +1,30 @@
+name: CUDA build and test
+
+on:
+  workflow_dispatch:
+    inputs:
+      CMAKE_BUILD_TYPE:
+        description: CMAKE_BUILD_TYPE
+        required: true
+        default: Debug
+jobs:
+  ubuntu2004-cuda:
+    name: tests ubuntu 20.04 with CUDA 11
+    runs-on: [self-hosted, ubuntu-20.04, cuda]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: create_build
+      run: mkdir build
+    - name: cmake
+      run: cmake -DCMAKE_BUILD_TYPE=${{ github.event.inputs.CMAKE_BUILD_TYPE }} -DCUDA=ON ..
+      working-directory: build
+    - name: make
+      run: make -j32
+      working-directory: build
+    - name: test
+      run: make test
+      env:
+        CTEST_OUTPUT_ON_FAILURE: 1
+        CTEST_PARALLEL_LEVEL: 32
+      working-directory: build

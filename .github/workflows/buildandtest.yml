@@ -3,25 +3,28 @@ name: Build and Test
 on:
   push:
     branches:
-      - master
-      - array_algebra
+      - citests
   pull_request:
     branches:
-      - master
-      - array_algebra
+      - citests
 
 jobs:
-  build-test-cpu:
-    name: builds taco with no options for cpu and runs all tests
-    runs-on: ubuntu-18.04
+  macos-python-clang:
+    name: tests macos with python and clang
+    runs-on: [macos-latest]
 
     steps:
     - uses: actions/checkout@v2
+    - name: install numpy
+      run: pip3 install numpy scipy
     - name: create_build
       run: mkdir build
     - name: cmake
-      run: cmake ..
+      run: cmake -DCMAKE_BUILD_TYPE=Debug -DPYTHON=ON ..
       working-directory: build
+      env:
+        CC: clang
+        CXX: clang++
     - name: make
       run: make -j2
       working-directory: build
@@ -32,78 +35,84 @@ jobs:
         CTEST_PARALLEL_LEVEL: 2
       working-directory: build
 
-  build-test-cpu-release:
-    name: builds taco release for cpu and runs all tests
-    runs-on: ubuntu-18.04
+  # windows-python-clang:
+  #   name: tests windows with python and clang
+  #   runs-on: [windows-latest]
+  #
+  #   steps:
+  #   - uses: actions/checkout@v2
+  #   - name: create_build
+  #     run: mkdir build
+  #   - name: cmake
+  #     run: cmake -DCMAKE_BUILD_TYPE=Debug -DPYTHON=ON ..
+  #     working-directory: build
+  #     env:
+  #       CC: clang
+  #       CXX: clang++
+  #   - name: build
+  #     run: cmake --build .
+  #     env:
+  #       CMAKE_BUILD_PARALLEL_LEVEL: 2
+  #     working-directory: build
+  #   - name: test
+  #     run: ctest
+  #     env:
+  #       CTEST_OUTPUT_ON_FAILURE: 1
+  #       CTEST_PARALLEL_LEVEL: 2
+  #     working-directory: build
+
+  ubuntu-python-openmp:
+    name: tests ubuntu with python and openmp and gcc 10
+    runs-on: [ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v2
-      - name: create_build
-        run: mkdir build
-      - name: cmake
-        run: cmake -DCMAKE_BUILD_TYPE=Release ..
-        working-directory: build
-      - name: make
-        run: make -j2
-        working-directory: build
-      - name: test
-        run: make test
-        env:
-          CTEST_OUTPUT_ON_FAILURE: 1
-          CTEST_PARALLEL_LEVEL: 2
-        working-directory: build
+    - uses: actions/checkout@v2
+    - name: prereqs
+      run: sudo apt-get install python3-numpy python3-scipy
+      env:
+        DEBIAN_FRONTEND: noninteractive
+    - name: create_build
+      run: mkdir build
+    - name: cmake
+      run: cmake -DCMAKE_BUILD_TYPE=Debug -DOPENMP=ON -DPYTHON=ON ..
+      working-directory: build
+      env:
+        CC: gcc-10
+        CXX: g++-10
+    - name: make
+      run: make -j2
+      working-directory: build
+    - name: test
+      run: make test
+      env:
+        CTEST_OUTPUT_ON_FAILURE: 1
+        CTEST_PARALLEL_LEVEL: 2
+      working-directory: build
 
-  build-test-cpu-openmp-python-asserts:
-    name: builds taco with compile-time asserts, openmp, and python and runs all tests
-    runs-on: ubuntu-18.04
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: apt-get update
-        run: sudo apt-get update
-      - name: install numpy and scipy
-        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -y python3-numpy python3-scipy
-      - name: create_build
-        run: mkdir build
-      - name: cmake
-        run: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DOPENMP=ON -DPYTHON=ON ..
-        working-directory: build
-      - name: make
-        run: make -j2
-        working-directory: build
-      - name: test
-        run: make test
-        env:
-          CTEST_OUTPUT_ON_FAILURE: 1
-          CTEST_PARALLEL_LEVEL: 2
-        working-directory: build
-
-  build-gpu:
-    name: build taco for gpu, but does not run tests
-    runs-on: ubuntu-18.04
+  ubuntu-python-openmp-clang:
+    name: tests ubuntu with python and openmp and clang 11
+    runs-on: [ubuntu-latest]
 
     steps:
-      - uses: actions/checkout@v2
-      - name: download cuda
-        run: wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda_10.2.89_440.33.01_linux.run
-      - name: install cuda
-        run: sudo sh cuda_10.2.89_440.33.01_linux.run --silent --toolkit --installpath="$GITHUB_WORKSPACE/cuda"
-      - name: add path
-        run: echo "$GITHUB_WORKSPACE/cuda/bin" >> $GITHUB_PATH
-      - name: set ld_library_path
-        run: echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/cuda/lib64" >> $GITHUB_ENV
-      - name: set library_path
-        run: echo "LIBRARY_PATH=$GITHUB_WORKSPACE/cuda/lib64" >> $GITHUB_ENV
-      - name: print environment
-        run: |
-          echo ${PATH}
-          echo ${LD_LIBRARY_PATH}
-          echo ${LIBRARY_PATH}
-      - name: create_build
-        run: mkdir build
-      - name: cmake
-        run: cmake -DCUDA=ON ..
-        working-directory: build
-      - name: make
-        run: make -j2
-        working-directory: build
+    - uses: actions/checkout@v2
+    - name: prereqs
+      run: sudo apt-get install python3-numpy python3-scipy
+      env:
+        DEBIAN_FRONTEND: noninteractive
+    - name: create_build
+      run: mkdir build
+    - name: cmake
+      run: cmake -DCMAKE_BUILD_TYPE=Debug -DOPENMP=ON -DPYTHON=ON ..
+      working-directory: build
+      env:
+        CC: clang-11
+        CXX: clang++-11
+    - name: make
+      run: make -j2
+      working-directory: build
+    - name: test
+      run: make test
+      env:
+        CTEST_OUTPUT_ON_FAILURE: 1
+        CTEST_PARALLEL_LEVEL: 2
+      working-directory: build
